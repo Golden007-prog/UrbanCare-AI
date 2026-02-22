@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis } from 'recharts';
 import clsx from 'clsx';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
@@ -49,11 +50,12 @@ export const VitalCard: React.FC<VitalCardProps> = ({ vital, theme, onClick }) =
   const t = themes[theme];
 
   return (
-    <div 
+    <motion.div 
       onClick={onClick}
-      className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+      whileHover={{ y: -4, boxShadow: "var(--shadow-premium-hover)" }}
+      className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[var(--shadow-premium)] transition-colors relative overflow-hidden group cursor-pointer"
     >
-      <div className={clsx("absolute top-0 left-0 w-1 h-full", t.bg)} />
+      <div className={clsx("absolute top-0 left-0 w-1 h-full bg-gradient-to-b", t.bg, "opacity-80")} />
       
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -70,15 +72,15 @@ export const VitalCard: React.FC<VitalCardProps> = ({ vital, theme, onClick }) =
         </div>
         
         <div className={clsx(
-          "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-          isPositive ? "bg-red-50 text-red-600" : isNeutral ? "bg-slate-50 text-slate-600" : "bg-emerald-50 text-emerald-600"
+          "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm",
+          isPositive ? "bg-red-50/80 text-red-600 border border-red-100" : isNeutral ? "bg-slate-50/80 text-slate-600 border border-slate-100" : "bg-emerald-50/80 text-emerald-600 border border-emerald-100"
         )}>
           {isPositive ? <ArrowUp className="w-3 h-3" /> : isNeutral ? <Minus className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
           <span>{Math.abs(vital.trend)}%</span>
         </div>
       </div>
 
-      <div className="h-16 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+      <div className="h-16 w-full opacity-60 group-hover:opacity-100 transition-opacity duration-300">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={vital.history}>
             <defs>
@@ -96,6 +98,7 @@ export const VitalCard: React.FC<VitalCardProps> = ({ vital, theme, onClick }) =
               fillOpacity={1} 
               fill={`url(#color-${vital.name})`} 
               strokeWidth={2}
+              animationDuration={1500}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -105,6 +108,6 @@ export const VitalCard: React.FC<VitalCardProps> = ({ vital, theme, onClick }) =
         <span>Baseline: {vital.history[0]?.value.toFixed(0)}</span>
         <span className="font-medium text-slate-500">Normal Range</span>
       </div>
-    </div>
+    </motion.div>
   );
 };

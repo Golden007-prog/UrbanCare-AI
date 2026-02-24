@@ -130,12 +130,22 @@ export default function Dashboard() {
               </div>
 
               {/* ── Vitals Grid ── */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <VitalCard vital={patient.vitals.heartRate} theme="rose" onClick={() => setSelectedVital({ vital: patient.vitals.heartRate, theme: 'rose' })} />
-                <VitalCard vital={patient.vitals.spO2} theme="sky" onClick={() => setSelectedVital({ vital: patient.vitals.spO2, theme: 'sky' })} />
-                <VitalCard vital={patient.vitals.temperature} theme="amber" onClick={() => setSelectedVital({ vital: patient.vitals.temperature, theme: 'amber' })} />
-                <VitalCard vital={patient.vitals.respiration} theme="emerald" onClick={() => setSelectedVital({ vital: patient.vitals.respiration, theme: 'emerald' })} />
-              </div>
+              {patient.admissionStatus === 'admitted' && patient.monitoringEnabled ? (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <VitalCard vital={patient.vitals.heartRate} theme="rose" onClick={() => setSelectedVital({ vital: patient.vitals.heartRate, theme: 'rose' })} />
+                  <VitalCard vital={patient.vitals.spO2} theme="sky" onClick={() => setSelectedVital({ vital: patient.vitals.spO2, theme: 'sky' })} />
+                  <VitalCard vital={patient.vitals.temperature} theme="amber" onClick={() => setSelectedVital({ vital: patient.vitals.temperature, theme: 'amber' })} />
+                  <VitalCard vital={patient.vitals.respiration} theme="emerald" onClick={() => setSelectedVital({ vital: patient.vitals.respiration, theme: 'emerald' })} />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 px-6 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                    <Activity className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">Patient not admitted yet</p>
+                  <p className="text-xs text-slate-500 mt-1">Vitals monitoring will start after admission</p>
+                </div>
+              )}
 
               {/* ── Alerts Row (compact inline) ── */}
               {(patientAlerts.length > 0 || patient.riskLevel !== 'Stable') && (

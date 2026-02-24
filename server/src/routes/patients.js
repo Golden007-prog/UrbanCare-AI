@@ -33,8 +33,15 @@ router.get('/:id', (req, res) => {
 // ── POST /api/patients — Create patient (doctor/admin only) ──
 
 router.post('/', requireRole('doctor', 'admin'), (req, res) => {
+  const { name, age, gender, primaryCondition, riskLevel, notes,
+          admissionStatus, heartRate, spo2, temperature, respiration } = req.body;
   const data = {
-    ...req.body,
+    name, age, gender, primaryCondition, riskLevel, notes,
+    admissionStatus,
+    heartRate: heartRate ? parseInt(heartRate) : null,
+    spo2: spo2 ? parseInt(spo2) : null,
+    temperature: temperature ? parseFloat(temperature) : null,
+    respiration: respiration ? parseInt(respiration) : null,
     hospitalID: req.hospitalID,
     doctorID: req.user.id,
   };

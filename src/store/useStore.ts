@@ -25,6 +25,7 @@ export interface Patient {
   hospitalId?: string;
   patientType: 'private' | 'admitted';
   admissionStatus: 'not_admitted' | 'admitted' | 'discharged';
+  monitoringEnabled: boolean;
   doctorID?: string;
   vitals: {
     heartRate: VitalSign;
@@ -61,6 +62,7 @@ export interface PatientDocument {
 }
 
 export type AIConsultMode = 'clinical-copilot' | 'senior-consultant' | 'risk-escalation' | 'discharge-review';
+export type AssistantMode = 'doctor' | 'patient';
 
 export interface Hospital {
   id: string;
@@ -153,6 +155,10 @@ interface AppState {
   isOfflineMode: boolean;
   toggleOfflineMode: () => void;
 
+  // Assistant Mode (Doctor / Patient)
+  assistantMode: AssistantMode;
+  setAssistantMode: (mode: AssistantMode) => void;
+
   // Settings
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => void;
@@ -216,6 +222,7 @@ const mockPatients: Patient[] = [
     hospitalId: 'H001',
     patientType: 'admitted',
     admissionStatus: 'admitted',
+    monitoringEnabled: true,
     doctorID: 'U001',
     vitals: {
       heartRate: {
@@ -275,6 +282,7 @@ const mockPatients: Patient[] = [
     hospitalId: 'H001',
     patientType: 'private',
     admissionStatus: 'not_admitted',
+    monitoringEnabled: false,
     doctorID: 'U001',
     vitals: {
       heartRate: {
@@ -334,6 +342,7 @@ const mockPatients: Patient[] = [
     hospitalId: 'H002',
     patientType: 'admitted',
     admissionStatus: 'admitted',
+    monitoringEnabled: true,
     doctorID: 'U002',
     vitals: {
       heartRate: {
@@ -473,7 +482,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       patients: state.patients.map((p) =>
         p.id === id
-          ? { ...p, patientType: 'admitted' as const, admissionStatus: 'admitted' as const, lastUpdated: 'Just now' }
+          ? { ...p, patientType: 'admitted' as const, admissionStatus: 'admitted' as const, monitoringEnabled: true, lastUpdated: 'Just now' }
           : p
       ),
     })),
@@ -481,7 +490,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       patients: state.patients.map((p) =>
         p.id === id
-          ? { ...p, admissionStatus: 'discharged' as const, lastUpdated: 'Just now' }
+          ? { ...p, admissionStatus: 'discharged' as const, monitoringEnabled: false, lastUpdated: 'Just now' }
           : p
       ),
     })),
@@ -543,6 +552,10 @@ export const useStore = create<AppState>((set, get) => ({
   // ── Global AI Settings ──
   isOfflineMode: false,
   toggleOfflineMode: () => set((state) => ({ isOfflineMode: !state.isOfflineMode })),
+
+  // ── Assistant Mode ──
+  assistantMode: 'doctor' as AssistantMode,
+  setAssistantMode: (mode) => set({ assistantMode: mode }),
 
   // ── Settings ──
   settings: defaultSettings,

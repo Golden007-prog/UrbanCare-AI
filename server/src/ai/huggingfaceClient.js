@@ -22,6 +22,7 @@ require('dotenv').config();
 const HF_TOKEN = process.env.HF_TOKEN || '';
 const HF_API_BASE = 'https://router.huggingface.co';
 const MEDGEMMA_ENDPOINT = process.env.MEDGEMMA_ENDPOINT || '';
+const TXGEMMA_ENDPOINT = process.env.TXGEMMA_ENDPOINT || '';
 
 // ── Connection status ─────────────────────────────────────
 
@@ -98,10 +99,37 @@ async function hfFetch(url, body, options = {}) {
  * @returns {Promise<{ generated_text: string }>}
  */
 async function textGeneration(modelId, prompt, opts = {}) {
-  const url = `${HF_API_BASE}/v1/chat/completions`;
-
   console.log(`  🧠 HF textGeneration → ${modelId}`);
   console.log(`     Prompt length: ${prompt.length} chars`);
+
+  const isMedGemma = modelId && modelId.toLowerCase().includes('medgemma');
+  const isTxGemma = modelId && modelId.toLowerCase().includes('txgemma');
+
+  // ── Prefer dedicated endpoints when available ─────────
+  const dedicatedUrl = isMedGemma && MEDGEMMA_ENDPOINT ? MEDGEMMA_ENDPOINT
+                     : isTxGemma && TXGEMMA_ENDPOINT ? TXGEMMA_ENDPOINT
+                     : null;
+
+  if (dedicatedUrl) {
+    console.log(`     → Using dedicated endpoint: ${dedicatedUrl}`);
+    const result = await hfFetch(dedicatedUrl, {
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: opts.maxTokens || 1024,
+        temperature: opts.temperature || 0.3,
+        top_p: 0.9,
+      },
+    }, { timeoutMs: opts.timeoutMs || 30000 });
+
+    const output = Array.isArray(result) ? result[0] : result;
+    const rawText = output.generated_text || output.text || (typeof output === 'string' ? output : '');
+    console.log(`     ✅ Dedicated endpoint replied (${rawText.length} chars)`);
+    return { generated_text: rawText, raw: output, source: 'dedicated-endpoint' };
+  }
+
+  // ── Fallback: generic HF Router (OpenAI-compatible) ───
+  const url = `${HF_API_BASE}/v1/chat/completions`;
+  console.log(`     → Using generic HF Router`);
 
   const result = await hfFetch(url, {
     model: modelId,
@@ -110,7 +138,7 @@ async function textGeneration(modelId, prompt, opts = {}) {
     ],
     max_tokens: opts.maxTokens || 1024,
     temperature: opts.temperature || 0.3,
-  }, { timeoutMs: opts.timeoutMs || 60000 });
+  }, { timeoutMs: opts.timeoutMs || 30000 });
 
   // OpenAI-compatible response format
   const text = result.choices?.[0]?.message?.content || '';
@@ -152,7 +180,7 @@ async function imageTextToText(modelId, imageBase64, prompt, opts = {}) {
         temperature: opts.temperature || 0.2,  // Low temp for medical accuracy
         top_p: 0.9,
       },
-    }, { timeoutMs: opts.timeoutMs || 60000 });
+    }, { timeoutMs: opts.timeoutMs || 90000 });
 
     // Dedicated endpoints may return varying response shapes
     const output = Array.isArray(result) ? result[0] : result;
@@ -194,7 +222,7 @@ async function imageTextToText(modelId, imageBase64, prompt, opts = {}) {
       max_new_tokens: opts.maxTokens || 512,
       temperature: opts.temperature || 0.3,
     },
-  }, { timeoutMs: opts.timeoutMs || 60000 });
+  }, { timeoutMs: opts.timeoutMs || 30000 });
 
   const output = Array.isArray(result) ? result[0] : result;
   return {

@@ -109,6 +109,17 @@ async function runAIPipeline(doc) {
   const ext = (doc.fileType || '').toLowerCase();
   let extractedData = {};
 
+  // Helper: run an agent call with a hard timeout so we never hang
+  const AGENT_TIMEOUT = 120000; // 120 seconds per agent call (lab extraction can take 90s+ for large images)
+  function withTimeout(promise, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after ${AGENT_TIMEOUT / 1000}s`)), AGENT_TIMEOUT)
+      ),
+    ]);
+  }
+
   console.log(`🧠 AI Pipeline started for ${doc.id} (${doc.originalName}, type=${ext})`);
 
   try {
@@ -122,25 +133,37 @@ async function runAIPipeline(doc) {
       const imageBase64 = fs.readFileSync(doc.filePath, 'base64');
 
       if (ReportPageClassifier) {
-        const classification = await ReportPageClassifier.process(
-          { imageBase64 },
-          { modelId: 'google/medgemma-4b-it' }
-        );
-        extractedData.category = classification.category;
-        extractedData.classificationConfidence = classification.confidence;
+        try {
+          const classification = await withTimeout(
+            ReportPageClassifier.process({ imageBase64 }, {}),
+            'ReportPageClassifier'
+          );
+          extractedData.category = classification.category === 'unknown' ? doc.type : classification.category;
+          extractedData.classificationConfidence = classification.confidence;
+        } catch (err) {
+          console.warn(`⚠️  Classification failed (using doc type): ${err.message}`);
+          extractedData.category = doc.type || 'lab_report';
+        }
       }
 
-      if (TabularLabExtractor && extractedData.category === 'lab_report') {
-        const labData = await TabularLabExtractor.process(
-          { imageBase64 },
-          { modelId: 'google/medgemma-4b-it' }
-        );
-        extractedData.labs = labData.labs;
-        extractedData.labCount = labData.count;
+      // If category is still not lab_report but the document was explicitly uploaded as one, force it
+      const categoryToUse = (extractedData.category === 'lab_report' || doc.type === 'lab_report') ? 'lab_report' : extractedData.category;
+      extractedData.category = categoryToUse;
+
+      if (TabularLabExtractor && categoryToUse === 'lab_report') {
+        try {
+          const labData = await withTimeout(
+            TabularLabExtractor.process({ imageBase64 }, {}),
+            'TabularLabExtractor'
+          );
+          extractedData.labs = labData.labs;
+          extractedData.labCount = labData.count;
+        } catch (err) {
+          console.warn(`⚠️  Lab extraction failed (using mock): ${err.message}`);
+        }
       }
     } else if (ext === 'pdf') {
       // ── PDF: Use text-based classification + mock extraction ──
-      // (Full PDF parsing would require pdf-parse; for now use filename heuristics)
       const nameHint = (doc.originalName || '').toLowerCase();
       if (/lab|blood|cbc|metabolic|lipid|thyroid/i.test(nameHint)) {
         extractedData.category = 'lab_report';
@@ -155,21 +178,28 @@ async function runAIPipeline(doc) {
       }
 
       if (ReportPageClassifier) {
-        const classification = await ReportPageClassifier.process(
-          { text: nameHint },
-          { modelId: 'google/medgemma-4b-it' }
-        );
-        extractedData.category = classification.category;
-        extractedData.classificationConfidence = classification.confidence;
+        try {
+          const classification = await withTimeout(
+            ReportPageClassifier.process({ text: nameHint }, {}),
+            'ReportPageClassifier (PDF)'
+          );
+          extractedData.category = classification.category;
+          extractedData.classificationConfidence = classification.confidence;
+        } catch (err) {
+          console.warn(`⚠️  PDF classification failed: ${err.message}`);
+        }
       }
     }
 
-    // Generate summary if agent is available
+    // Generate summary if agent is available and we have lab data
     if (DetailedReportSummary && extractedData.labs) {
       try {
-        const summary = await DetailedReportSummary.process(
-          { text: JSON.stringify(extractedData.labs) },
-          { modelId: 'google/medgemma-4b-it' }
+        const summary = await withTimeout(
+          DetailedReportSummary.process(
+            { 'tabular-lab-extractor': { labs: extractedData.labs } },
+            {}
+          ),
+          'DetailedReportSummary'
         );
         extractedData.summary = summary.summary || summary;
       } catch (err) {

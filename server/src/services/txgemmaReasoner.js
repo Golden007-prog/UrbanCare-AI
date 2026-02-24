@@ -1,5 +1,6 @@
 const { callTxGemma, parseToStructured } = require('./txgemmaClient');
 const { GoogleGenAI } = require('@google/genai');
+const { CLINICAL_SYSTEM_PROMPT, RADIOLOGY_JSON_TEMPLATE } = require('../config/clinicalSystemPrompt');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -45,23 +46,17 @@ async function synthesizeXRayReasoning({ medgemmaResults, patient, voiceQuestion
     : `### Doctor's Request\n"Analyze this X-ray and summarize the findings and recommendations."\n`;
 
 
-  const fullPrompt = `You are an expert clinical reasoning AI assisting a physician.
-You have been provided with radiological findings extracted by a vision model (MedGemma) from various regions of a patient's X-ray.
+  const fullPrompt = `${CLINICAL_SYSTEM_PROMPT}
+
+You are provided with radiological findings extracted by a vision model (MedGemma) from various regions of an X-ray. Synthesize these into a cohesive clinical assessment for the consulting physician.
 
 ${patientContext}
 ${evidenceText}
 ${questionContext}
 
-Synthesize this data into a cohesive clinical assessment.
+Provide a structured radiology-style response.
 
-Respond in strict JSON format matching this schema:
-{
-  "summary": "Cohesive summary of the findings across all analyzed regions, addressing the doctor's question.",
-  "differential": ["Most likely diagnosis", "Alternative diagnosis 1"],
-  "recommended_action": "Specific next clinical steps (e.g. 'Splinting and orthopedic referral', 'Reassurance and pain management')",
-  "risk_level": "low|moderate|high|critical",
-  "confidence": 0.0-1.0
-}`;
+${RADIOLOGY_JSON_TEMPLATE}`;
 
   // 2. We use our existing TxGemma client which already handles retries and Gemini fallbacks.
   console.log(`  🧠 TxGemma synthesising findings from ${medgemmaResults?.length || 0} regions...`);

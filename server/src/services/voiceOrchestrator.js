@@ -44,8 +44,8 @@ async function orchestrateMultimodal(reqBody) {
   // Ensure we have some prompt text if an image is provided but no question
   if (imageBase64 && !voiceQuestion) {
     voiceQuestion = mode === 'region'
-      ? 'Analyze the selected region of this X-ray and describe the radiological findings.'
-      : 'Analyze the entire X-ray and describe the radiological findings.';
+      ? 'Analyze the selected region of this X-ray. Provide structured radiological findings for the consulting physician.'
+      : 'Analyze the entire X-ray. Provide structured radiological findings and clinical impression for the consulting physician.';
   }
 
   // 2. Decide workflow: Multimodal Image Pipeline or Text-only Reasoning

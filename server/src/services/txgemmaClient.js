@@ -5,11 +5,15 @@
 // Calls the deployed TxGemma endpoint for clinical reasoning.
 // Falls back to Gemini Flash if TxGemma is unreachable.
 //
+// Mode: Doctor Consultant — all responses are doctor-to-doctor
+//
 // Endpoint: TXGEMMA_ENDPOINT (env)
 // Auth:     HF_TOKEN (Bearer)
 // Timeout:  60 seconds
 // Retries:  2 (exponential backoff)
 // ──────────────────────────────────────────────────────────
+
+const { CLINICAL_SYSTEM_PROMPT } = require('../config/clinicalSystemPrompt');
 
 const axios = require('axios');
 const { GoogleGenAI } = require('@google/genai');
@@ -80,15 +84,17 @@ async function callTxGemma(contextJson) {
 
   const prompt = typeof contextJson === 'string' ? contextJson : JSON.stringify(contextJson, null, 2);
 
-  const clinicalPrompt = `You are a clinical reasoning AI assistant. Analyze the following patient context and doctor's question. Provide structured clinical reasoning.
+  const clinicalPrompt = `${CLINICAL_SYSTEM_PROMPT}
+
+Analyze the following clinical context and the consulting physician's question. Provide structured clinical reasoning using medical terminology.
 
 ${prompt}
 
 Respond in JSON format:
 {
-  "summary": "Brief clinical summary",
+  "summary": "Concise clinical summary using medical terminology",
   "differential": ["diagnosis 1", "diagnosis 2"],
-  "recommended_action": "Recommended next steps",
+  "recommended_action": "Recommended next clinical steps for the treating physician",
   "risk_level": "low|moderate|high|critical",
   "confidence": 0.0-1.0
 }`;
@@ -163,15 +169,17 @@ async function callGeminiFallback(contextJson) {
 
     const result = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `You are a clinical reasoning AI assistant. Analyze the following patient context and provide structured clinical reasoning.
+      contents: `${CLINICAL_SYSTEM_PROMPT}
+
+Analyze the following clinical context and provide structured clinical reasoning using medical terminology. Address your response to the consulting physician.
 
 ${prompt}
 
 Respond in JSON format:
 {
-  "summary": "Brief clinical summary",
+  "summary": "Concise clinical summary using medical terminology",
   "differential": ["diagnosis 1", "diagnosis 2"],
-  "recommended_action": "Recommended next steps",
+  "recommended_action": "Recommended next clinical steps for the treating physician",
   "risk_level": "low|moderate|high|critical",
   "confidence": 0.0-1.0
 }`,
@@ -200,7 +208,9 @@ Respond in JSON format:
 async function analyzePatientReport(reportText, patientContext = {}) {
   const { age, gender, condition } = patientContext;
 
-  const prompt = `You are a clinical AI assistant analyzing a patient's medical document.
+  const prompt = `${CLINICAL_SYSTEM_PROMPT}
+
+Analyze the following medical document for the consulting physician.
 
 Patient Context:
 - Age: ${age || 'Unknown'}
@@ -210,14 +220,14 @@ Patient Context:
 Document Content:
 ${reportText}
 
-Analyze this document and return a JSON response with:
+Provide a structured clinical analysis. Return a JSON response:
 {
-  "summary": "Brief summary of the document findings",
+  "summary": "Clinical summary of document findings",
   "medications": ["List of medications mentioned"],
   "diagnosis": "Primary diagnosis or findings",
   "risks": ["List of identified risk factors"],
   "test_results": [{"test": "name", "value": "result", "status": "normal|abnormal|critical"}],
-  "recommendations": "Recommended follow-up actions"
+  "recommendations": "Recommended follow-up actions for the treating physician"
 }
 
 Respond ONLY with valid JSON.`;

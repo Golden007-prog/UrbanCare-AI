@@ -6,6 +6,7 @@
 
 const BaseAgent = require('../BaseAgent');
 const hf = require('../../ai/huggingfaceClient');
+const { CLINICAL_SYSTEM_PROMPT, RADIOLOGY_JSON_TEMPLATE } = require('../../config/clinicalSystemPrompt');
 
 class XRayAnalyzer extends BaseAgent {
   constructor() {
@@ -40,8 +41,11 @@ class XRayAnalyzer extends BaseAgent {
             patient: patientContext || {},
           });
         } else {
-          prompt = `Analyze this chest X-ray image. Provide a structured radiology report.
-Return JSON: {"findings": [{"region": "", "observation": "", "severity": "normal|mild|moderate|severe"}], "impression": "", "comparison": "No prior studies available", "technique": "PA chest radiograph", "clinicalCorrelation": "", "redFlags": [], "confidence": <0-1>}`;
+          prompt = `${CLINICAL_SYSTEM_PROMPT}
+
+Analyze this chest X-ray image. Provide a structured radiology report for the consulting physician.
+
+${RADIOLOGY_JSON_TEMPLATE}`;
         }
 
         const result = await hf.imageTextToText(options.modelId, imageBase64, prompt, { maxTokens: 1024 });

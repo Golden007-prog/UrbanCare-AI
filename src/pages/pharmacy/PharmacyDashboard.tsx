@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UploadCard from '../../components/UploadCard';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -8,11 +9,12 @@ import {
 
 export default function PharmacyDashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'prescriptions' | 'inventory' | 'billing'>('prescriptions');
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   // Mock prescriptions data

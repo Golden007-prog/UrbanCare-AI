@@ -35,7 +35,7 @@ const FILE_TYPE_ICONS: Record<string, React.ReactNode> = {
   png: <Image className="w-5 h-5 text-blue-500" />,
 };
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5001';
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -583,9 +583,59 @@ export const DocumentsTab: React.FC<Props> = ({ patientId }) => {
                                 </div>
                               )}
                               {!(doc.extractedData as Record<string, unknown>).labs && (
-                                <pre className="text-[11px] text-slate-600 bg-white p-2 rounded border border-indigo-100 overflow-auto max-h-32">
-                                  {JSON.stringify(doc.extractedData, null, 2)}
-                                </pre>
+                                <div className="space-y-2">
+                                  {(doc.extractedData as Record<string, unknown>).summary && (
+                                    <div>
+                                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Summary</p>
+                                      <p className="text-xs text-slate-700 leading-relaxed">{String((doc.extractedData as Record<string, unknown>).summary)}</p>
+                                    </div>
+                                  )}
+                                  {Array.isArray((doc.extractedData as Record<string, unknown>).keyFindings) && (
+                                    <div>
+                                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Key Findings</p>
+                                      <ul className="space-y-0.5">
+                                        {((doc.extractedData as Record<string, unknown>).keyFindings as string[]).map((f, i) => (
+                                          <li key={i} className="text-xs text-slate-700 flex items-start gap-1.5">
+                                            <span className="text-emerald-500 mt-0.5">•</span>{f}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {Array.isArray((doc.extractedData as Record<string, unknown>).recommendations) && (
+                                    <div>
+                                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Recommendations</p>
+                                      <ul className="space-y-0.5">
+                                        {((doc.extractedData as Record<string, unknown>).recommendations as string[]).map((r, i) => (
+                                          <li key={i} className="text-xs text-slate-700 flex items-start gap-1.5">
+                                            <span className="text-indigo-500 mt-0.5">→</span>{r}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {(doc.extractedData as Record<string, unknown>).classificationConfidence && (
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <span className="text-[10px] text-slate-500">AI Confidence:</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full bg-indigo-500 rounded-full"
+                                            style={{ width: `${Math.round(Number((doc.extractedData as Record<string, unknown>).classificationConfidence) * 100)}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-[10px] font-semibold text-indigo-600">
+                                          {Math.round(Number((doc.extractedData as Record<string, unknown>).classificationConfidence) * 100)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {!(doc.extractedData as Record<string, unknown>).summary &&
+                                   !(doc.extractedData as Record<string, unknown>).keyFindings &&
+                                   !(doc.extractedData as Record<string, unknown>).recommendations && (
+                                    <p className="text-xs text-slate-500 italic">Document classified successfully. Lab data extraction was not available for this document type.</p>
+                                  )}
+                                </div>
                               )}
                             </div>
                           )}

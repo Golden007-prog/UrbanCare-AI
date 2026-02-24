@@ -41,18 +41,28 @@ export default function PatientOnboarding({ open, onClose, onComplete }: Patient
     }
   }, [open]);
 
+  const DEFAULT_HOSPITALS: Hospital[] = [
+    { id: 'H001', name: 'UrbanCare Medical Center', address: 'Metro Healthcare Campus' },
+    { id: 'H002', name: 'City General Hospital', address: 'Downtown Medical District' },
+    { id: 'H003', name: 'Green Valley Clinic', address: 'Suburban Health Park' },
+  ];
+
   async function fetchHospitals() {
     try {
       const res = await fetch(`${API_URL}/api/patient/hospitals`, { credentials: 'include' });
+      if (!res.ok) {
+        setHospitals(DEFAULT_HOSPITALS);
+        return;
+      }
       const data = await res.json();
-      if (data.success) setHospitals(data.data);
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setHospitals(data.data);
+      } else {
+        setHospitals(DEFAULT_HOSPITALS);
+      }
     } catch (err) {
-      // Use defaults
-      setHospitals([
-        { id: 'H001', name: 'UrbanCare Medical Center', address: 'Metro Healthcare Campus' },
-        { id: 'H002', name: 'City General Hospital', address: 'Downtown Medical District' },
-        { id: 'H003', name: 'Green Valley Clinic', address: 'Suburban Health Park' },
-      ]);
+      // Network error or server unreachable — use defaults
+      setHospitals(DEFAULT_HOSPITALS);
     }
   }
 
@@ -320,7 +330,7 @@ export default function PatientOnboarding({ open, onClose, onComplete }: Patient
               </div>
               <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>You're All Set!</h3>
               <p style={{ fontSize: 14, color: '#64748b', maxWidth: 300, margin: '0 auto' }}>
-                Your medical profile is ready. TxGemma AI is analyzing your documents.
+                Your medical profile is ready. AI clinical analysis is processing your documents.
               </p>
             </div>
           )}

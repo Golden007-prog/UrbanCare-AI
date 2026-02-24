@@ -15,7 +15,7 @@ class ReportPageClassifier extends BaseAgent {
       number: 1,
       layer: 'Classification',
       layerNumber: 1,
-      modelId: 'google/medgemma-4b-it',
+      modelId: 'medgemma-4b-it',
       modelName: 'MedGemma 4B',
       task: 'image-text-to-text',
       description: 'Classifies uploaded documents as lab report, bill, prescription, or discharge summary',
@@ -24,12 +24,13 @@ class ReportPageClassifier extends BaseAgent {
 
   async process(input, options) {
     const { imageBase64, text } = input;
+    const modelId = options.modelId || this.modelId;
     const CATEGORIES = ['lab_report', 'bill', 'prescription', 'discharge_summary', 'radiology_report', 'unknown'];
 
     if (imageBase64 && hf.isConfigured()) {
       try {
         const prompt = `You are a medical document classifier. Classify this document image into exactly one of these categories: ${CATEGORIES.join(', ')}.\n\nRespond with ONLY a JSON object: {"category": "<category>", "confidence": <0-1>}`;
-        const result = await hf.imageTextToText(options.modelId, imageBase64, prompt, { maxTokens: 100 });
+        const result = await hf.imageTextToText(modelId, imageBase64, prompt, { maxTokens: 100 });
         const parsed = JSON.parse(result.generated_text.match(/\{.*\}/s)?.[0] || '{}');
         return { category: parsed.category || 'unknown', confidence: parsed.confidence || 0.5, model: options.modelId, mock: false };
       } catch (err) {

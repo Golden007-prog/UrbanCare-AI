@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Lock, ShieldCheck, Wifi, Bell, Settings } from 'lucide-react';
+import { Search, Lock, ShieldCheck, Wifi, Bell, Settings, Stethoscope, Users } from 'lucide-react';
 import { DoctorProfileCard } from './DoctorProfileCard';
 import { HospitalSwitcher } from './HospitalSwitcher';
 import { SettingsDropdown } from './SettingsDropdown';
@@ -8,7 +8,7 @@ import { useStore } from '../store/useStore';
 
 export const Header = () => {
   const [auditOpen, setAuditOpen] = useState(false);
-  const { settings } = useStore();
+  const { settings, assistantMode, setAssistantMode } = useStore();
 
   return (
     <>
@@ -36,7 +36,59 @@ export const Header = () => {
           {/* Hospital Switcher */}
           <HospitalSwitcher />
 
-          {/* Status indicators */}
+          {/* Assistant Mode Toggle */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: '#f1f5f9',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+            padding: 2,
+            gap: 0,
+          }}>
+            <button
+              onClick={() => setAssistantMode('doctor')}
+              title="Doctor Consultant Mode"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 10px',
+                borderRadius: 6,
+                border: 'none',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                background: assistantMode === 'doctor' ? '#4f46e5' : 'transparent',
+                color: assistantMode === 'doctor' ? 'white' : '#64748b',
+              }}
+            >
+              <Stethoscope size={12} />
+              Doctor
+            </button>
+            <button
+              onClick={() => setAssistantMode('patient')}
+              title="Patient-Friendly Mode"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 10px',
+                borderRadius: 6,
+                border: 'none',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                background: assistantMode === 'patient' ? '#10b981' : 'transparent',
+                color: assistantMode === 'patient' ? 'white' : '#64748b',
+              }}
+            >
+              <Users size={12} />
+              Patient
+            </button>
+          </div>
           <div className="flex items-center gap-4 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
             <div className="flex items-center gap-1.5 text-emerald-600">
               <Lock className="w-3 h-3" />

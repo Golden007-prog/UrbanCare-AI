@@ -148,7 +148,7 @@ export default function UploadCard({ type, label, description, patientProfileId,
           <div style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
             {status === 'idle' ? description :
              status === 'uploading' ? `Uploading ${fileName}...` :
-             status === 'processing' ? 'TxGemma AI is analyzing...' :
+             status === 'processing' ? 'Clinical analysis in progress...' :
              status === 'error' ? errorMsg :
              fileName}
           </div>

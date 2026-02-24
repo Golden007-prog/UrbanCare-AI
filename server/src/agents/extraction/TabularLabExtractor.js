@@ -1,11 +1,13 @@
 // ──────────────────────────────────────────────────────────
 // Agent #4 — Tabular Lab Extractor
-// Model: google/medgemma-4b-it (vision-text)
+// Model: Gemini 2.5 Flash (Vision) — for reliable OCR
 // Layer: Extraction
 // ──────────────────────────────────────────────────────────
 
 const BaseAgent = require('../BaseAgent');
-const hf = require('../../ai/huggingfaceClient');
+const { GoogleGenAI } = require('@google/genai');
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 class TabularLabExtractor extends BaseAgent {
   constructor() {
@@ -15,39 +17,91 @@ class TabularLabExtractor extends BaseAgent {
       number: 4,
       layer: 'Extraction',
       layerNumber: 2,
-      modelId: 'google/medgemma-4b-it',
-      modelName: 'MedGemma 4B',
+      modelId: 'gemini-2.5-flash',
+      modelName: 'Gemini 2.5 Flash',
       task: 'image-text-to-text',
-      description: 'Extracts structured lab data (tests, values, units, ranges) from report images',
+      description: 'Extracts structured lab data (tests, values, units, ranges) from report images using Gemini Vision',
     });
   }
 
   async process(input, options) {
     const { imageBase64 } = input;
 
-    if (imageBase64 && hf.isConfigured()) {
-      try {
-        const prompt = `Extract all lab test results from this medical report image. Return a JSON array with objects containing: {"test": "<name>", "value": "<value>", "unit": "<unit>", "referenceRange": "<range>", "status": "normal|high|low|critical"}`;
-        const result = await hf.imageTextToText(options.modelId, imageBase64, prompt, { maxTokens: 1024 });
-        const parsed = JSON.parse(result.generated_text.match(/\[.*\]/s)?.[0] || '[]');
-        return { labs: parsed, count: parsed.length, mock: false };
-      } catch (err) {
-        console.warn(`  ⚠️ Lab extraction failed: ${err.message}`);
-      }
+    if (!imageBase64) {
+      return { labs: [], count: 0, mock: false, error: 'No image provided' };
     }
 
-    return {
-      labs: [
-        { test: 'Hemoglobin', value: '12.5', unit: 'g/dL', referenceRange: '12.0-16.0', status: 'normal' },
-        { test: 'WBC', value: '11200', unit: '/μL', referenceRange: '4000-11000', status: 'high' },
-        { test: 'Platelets', value: '245000', unit: '/μL', referenceRange: '150000-400000', status: 'normal' },
-        { test: 'Creatinine', value: '1.8', unit: 'mg/dL', referenceRange: '0.7-1.3', status: 'high' },
-        { test: 'Blood Glucose (Fasting)', value: '142', unit: 'mg/dL', referenceRange: '70-100', status: 'high' },
-        { test: 'HbA1c', value: '7.2', unit: '%', referenceRange: '<5.7', status: 'high' },
-      ],
-      count: 6,
-      mock: true,
-    };
+    if (!GEMINI_API_KEY) {
+      console.warn('  ⚠️ GEMINI_API_KEY not configured, cannot extract labs');
+      return { labs: [], count: 0, mock: false, error: 'Gemini API key not configured' };
+    }
+
+    const prompt = `You are a medical lab report OCR system. Analyze this medical lab report image carefully.
+
+Extract ALL lab test results visible in the image. For each test, determine:
+1. The test name exactly as written
+2. The numeric value exactly as shown
+3. The unit of measurement
+4. The reference/normal range if shown
+5. Status: "normal" if value is within range, "high" if above, "low" if below, "critical" if severely abnormal
+
+Return ONLY a valid JSON array. Example format:
+[{"test":"Hemoglobin","value":"11.6","unit":"gm/dl","referenceRange":"13.0-17.0","status":"low"}]
+
+Rules:
+- Extract EVERY single test result visible, do not skip any
+- Use exact values from the image, do NOT make up or estimate values
+- Include ALL tests from ALL sections (CBC, differential, absolute counts, etc.)
+- Return ONLY the JSON array, absolutely no other text before or after it`;
+
+    try {
+      console.log('     🔬 Using Gemini Vision for lab extraction...');
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+      // Clean base64 - remove data URI prefix if present
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/png',
+                  data: cleanBase64,
+                },
+              },
+              { text: prompt },
+            ],
+          },
+        ],
+        config: {
+          temperature: 0.1, // Very low temp for accuracy
+          maxOutputTokens: 4096,
+        },
+      });
+
+      const text = response.text || '';
+      console.log(`     📄 Gemini response: ${text.length} chars`);
+
+      // Extract JSON array from response
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log(`     ✅ Extracted ${parsed.length} lab values via Gemini Vision`);
+          return { labs: parsed, count: parsed.length, mock: false };
+        }
+      }
+
+      console.warn(`     ⚠️ Could not parse lab data from Gemini response`);
+      return { labs: [], count: 0, mock: false, error: 'Could not parse lab data from response' };
+    } catch (err) {
+      console.error(`     ❌ Gemini lab extraction failed: ${err.message}`);
+      return { labs: [], count: 0, mock: false, error: err.message };
+    }
   }
 }
 

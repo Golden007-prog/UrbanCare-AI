@@ -86,6 +86,11 @@ CREATE TABLE IF NOT EXISTS patients (
     risk_level      VARCHAR(50) DEFAULT 'Stable',
     doctor_id       VARCHAR(50),
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    monitoring_enabled BOOLEAN DEFAULT false,
+    heart_rate      INTEGER,
+    spo2            INTEGER,
+    temperature     FLOAT,
+    respiration     INTEGER,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

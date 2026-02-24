@@ -269,12 +269,12 @@ export const AIRegionPanel: React.FC<AIRegionPanelProps> = ({
       false,
     );
 
-  /** Explain with Voice — auto-detects region vs full */
+  /** Clinical Voice Summary — auto-detects region vs full */
   const handleVoiceExplanation = () =>
     handleAnalyzeImage(
       hasSelection
-        ? 'Analyze the selected region of this X-ray and explain the key findings verbally.'
-        : 'Analyze the entire X-ray and explain the key findings to me verbally as if to a patient.',
+        ? 'Analyze the selected region of this X-ray. Provide structured radiological findings and clinical impression.'
+        : 'Analyze the entire X-ray. Provide structured radiological findings and clinical impression for the consulting physician.',
       true,
     );
 
@@ -392,7 +392,7 @@ export const AIRegionPanel: React.FC<AIRegionPanelProps> = ({
             </>
           ) : (
             <>
-              <Volume2 size={14} /> Explain with Voice
+              <Volume2 size={14} /> Clinical Voice Summary
             </>
           )}
         </button>

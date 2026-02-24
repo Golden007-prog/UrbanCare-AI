@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../store/useStore';
 import { VitalCard } from '../../components/VitalCard';
@@ -38,6 +39,7 @@ interface AISummary {
 
 export default function PatientDashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { patients } = useStore();
   const patient = patients[0]; // Patient sees their own data
   const [selectedVital, setSelectedVital] = useState<{ vital: VitalSign; theme: any } | null>(null);
@@ -87,7 +89,7 @@ export default function PatientDashboard() {
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   // Mock prescriptions for patient view
@@ -230,12 +232,26 @@ export default function PatientDashboard() {
             </div>
 
             {/* Vitals Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 28 }}>
-              <VitalCard vital={patient.vitals.heartRate} theme="rose" onClick={() => setSelectedVital({ vital: patient.vitals.heartRate, theme: 'rose' })} />
-              <VitalCard vital={patient.vitals.spO2} theme="sky" onClick={() => setSelectedVital({ vital: patient.vitals.spO2, theme: 'sky' })} />
-              <VitalCard vital={patient.vitals.temperature} theme="amber" onClick={() => setSelectedVital({ vital: patient.vitals.temperature, theme: 'amber' })} />
-              <VitalCard vital={patient.vitals.respiration} theme="emerald" onClick={() => setSelectedVital({ vital: patient.vitals.respiration, theme: 'emerald' })} />
-            </div>
+            {patient.admissionStatus === 'admitted' && patient.monitoringEnabled ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 28 }}>
+                <VitalCard vital={patient.vitals.heartRate} theme="rose" onClick={() => setSelectedVital({ vital: patient.vitals.heartRate, theme: 'rose' })} />
+                <VitalCard vital={patient.vitals.spO2} theme="sky" onClick={() => setSelectedVital({ vital: patient.vitals.spO2, theme: 'sky' })} />
+                <VitalCard vital={patient.vitals.temperature} theme="amber" onClick={() => setSelectedVital({ vital: patient.vitals.temperature, theme: 'amber' })} />
+                <VitalCard vital={patient.vitals.respiration} theme="emerald" onClick={() => setSelectedVital({ vital: patient.vitals.respiration, theme: 'emerald' })} />
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '32px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14,
+                textAlign: 'center', marginBottom: 28,
+              }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                  <Activity size={24} color="#94a3b8" />
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#334155', margin: 0 }}>Patient not admitted yet</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0 0' }}>Vitals monitoring will start after admission</p>
+              </div>
+            )}
 
             {/* AI Health Summary */}
             {aiSummary && (aiSummary.diagnoses.length > 0 || aiSummary.medications.length > 0 || aiSummary.risks.length > 0) && (

@@ -58,6 +58,7 @@ export function IntakeFormModal({ open, onClose }: IntakeFormModalProps) {
         hospitalId: activeHospitalId,
         patientType: 'private',
         admissionStatus: 'discharged',
+        monitoringEnabled: false,
         vitals: {
           heartRate: { name: 'Heart Rate', value: 76, unit: 'BPM', trend: 0, status: 'stable', history: [] },
           bloodPressure: { sys: 120, dia: 78, status: 'stable', trend: 0 },

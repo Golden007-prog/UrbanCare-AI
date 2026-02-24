@@ -23,6 +23,7 @@ const { GoogleGenAI } = require('@google/genai');
 const { query } = require('../config/db');
 const { callTxGemma } = require('../services/txgemmaClient');
 const { buildPatientContext, saveToMemory } = require('./contextBuilder');
+const { VOICE_SYSTEM_PROMPT, CLINICAL_SYSTEM_PROMPT } = require('../config/clinicalSystemPrompt');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_TIMEOUT = 30000;
@@ -81,13 +82,15 @@ async function rewriteForSpeech(clinicalReasoning) {
 
   const result = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: `You are a clinical AI assistant speaking to a doctor. Rewrite the following clinical analysis into a natural, conversational spoken explanation. Be concise but thorough. Use medical terminology appropriate for a physician audience. Do NOT use bullet points or markdown — write in flowing, spoken paragraphs.
+    contents: `${VOICE_SYSTEM_PROMPT}
+
+Rewrite the following clinical analysis into a concise, spoken clinical summary for a physician colleague. Maintain medical terminology. Do NOT simplify for patients. Do NOT address any patient directly. Structure as: Findings, Impression, Recommendation. Be brief and professional — no bullet points or markdown, use flowing spoken paragraphs.
 
 Clinical Analysis:
 ${reasoningText}
 
-Spoken explanation:`,
-    config: { temperature: 0.4 },
+Spoken clinical summary:`,
+    config: { temperature: 0.3 },
   });
 
   const spoken = (result.text || '').trim();

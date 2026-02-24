@@ -16,7 +16,19 @@ function getById(id, hospitalID) {
 }
 
 function create(data) {
-  return PatientModel.create(data);
+  // Derive monitoring from admission status
+  const isAdmitted = data.admissionStatus === 'admitted';
+  return PatientModel.create({
+    ...data,
+    admissionStatus: isAdmitted ? 'admitted' : 'not_admitted',
+    patientType: isAdmitted ? 'admitted' : 'private',
+    monitoringEnabled: isAdmitted,
+    // Pass vitals only if admitted
+    heartRate: isAdmitted ? data.heartRate : null,
+    spo2: isAdmitted ? data.spo2 : null,
+    temperature: isAdmitted ? data.temperature : null,
+    respiration: isAdmitted ? data.respiration : null,
+  });
 }
 
 function update(id, updates, hospitalID) {
@@ -31,6 +43,7 @@ function admit(id, hospitalID) {
   return PatientModel.update(id, {
     patientType: 'admitted',
     admissionStatus: 'admitted',
+    monitoringEnabled: true,
   });
 }
 
@@ -39,6 +52,7 @@ function discharge(id, hospitalID) {
   if (!patient || patient.hospitalID !== hospitalID) return null;
   return PatientModel.update(id, {
     admissionStatus: 'discharged',
+    monitoringEnabled: false,
   });
 }
 

@@ -11,6 +11,11 @@ const patients = [
     gender: 'Male',
     patientType: 'admitted',       // private | admitted
     admissionStatus: 'admitted',   // not_admitted | admitted | discharged
+    monitoringEnabled: true,
+    heartRate: 82,
+    spo2: 96,
+    temperature: 98.8,
+    respiration: 18,
     primaryCondition: 'Hypertension',
     riskLevel: 'Stable',
     doctorID: 'U001',
@@ -24,6 +29,11 @@ const patients = [
     gender: 'Female',
     patientType: 'private',
     admissionStatus: 'not_admitted',
+    monitoringEnabled: false,
+    heartRate: null,
+    spo2: null,
+    temperature: null,
+    respiration: null,
     primaryCondition: 'Post-op Recovery',
     riskLevel: 'Stable',
     doctorID: 'U001',
@@ -37,6 +47,11 @@ const patients = [
     gender: 'Male',
     patientType: 'admitted',
     admissionStatus: 'admitted',
+    monitoringEnabled: true,
+    heartRate: 104,
+    spo2: 88,
+    temperature: 101.2,
+    respiration: 28,
     primaryCondition: 'COPD Exacerbation',
     riskLevel: 'Critical',
     doctorID: 'U002',
@@ -59,6 +74,7 @@ function findByDoctorID(doctorID) {
 }
 
 function create(data) {
+  const isAdmitted = data.admissionStatus === 'admitted';
   const patient = {
     id: `P${String(counter++).padStart(3, '0')}`,
     hospitalID: data.hospitalID,
@@ -67,6 +83,11 @@ function create(data) {
     gender: data.gender,
     patientType: data.patientType || 'private',
     admissionStatus: data.admissionStatus || 'not_admitted',
+    monitoringEnabled: isAdmitted,
+    heartRate: isAdmitted ? (data.heartRate || null) : null,
+    spo2: isAdmitted ? (data.spo2 || null) : null,
+    temperature: isAdmitted ? (data.temperature || null) : null,
+    respiration: isAdmitted ? (data.respiration || null) : null,
     primaryCondition: data.primaryCondition || '',
     riskLevel: data.riskLevel || 'Stable',
     doctorID: data.doctorID,

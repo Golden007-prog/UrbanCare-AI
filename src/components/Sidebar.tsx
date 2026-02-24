@@ -3,6 +3,7 @@ import { Search, Plus, Upload } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { AddPatientModal } from './AddPatientModal';
 import { CsvImportModal } from './CsvImportModal';
+import { AdmissionBadge } from './AdmissionBadge';
 import clsx from 'clsx';
 
 export const Sidebar = () => {
@@ -111,6 +112,7 @@ export const Sidebar = () => {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Updated {patient.lastUpdated}</span>
+                <AdmissionBadge status={patient.admissionStatus} variant="inline" />
                 <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px] font-medium">
                   Synthetic Monitoring
                 </span>

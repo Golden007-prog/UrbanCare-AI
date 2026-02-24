@@ -31,6 +31,9 @@ export const AddPatientModal: React.FC<AddPatientModalProps> = ({ isOpen, onClos
       condition: formData.condition || 'General Checkup',
       riskLevel: formData.riskLevel as any,
       lastUpdated: 'Just now',
+      hospitalId: undefined, // Adding optional hospitalId to match others
+      patientType: 'private', // Default to private
+      admissionStatus: 'discharged', // Default admission status
       vitals: {
         heartRate: { name: 'Heart Rate', value: 75, unit: 'BPM', trend: 0, status: 'stable', history: [] },
         bloodPressure: { sys: 120, dia: 80, status: 'stable', trend: 0 },

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Bot, User, Volume2 } from 'lucide-react';
 import { StructuredOutputCard } from './StructuredOutputCard';
+import { speakText, stopSpeech } from '../../lib/speech';
 import type { ChatMessage as ChatMessageType } from '../../hooks/useAIConsult';
 
 interface ChatMessageProps {
@@ -47,24 +48,7 @@ function extractStructuredBlocks(content: string) {
  * Optional text-to-speech for assistant messages
  */
 function handleTTS(text: string) {
-  if (!('speechSynthesis' in window)) return;
-
-  // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
-
-  // Strip markdown for cleaner TTS
-  const cleanText = text
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/#{1,6}\s/g, '')
-    .replace(/[|─]/g, '')
-    .trim();
-
-  const utterance = new SpeechSynthesisUtterance(cleanText);
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-  window.speechSynthesis.speak(utterance);
+  speakText(text);
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {

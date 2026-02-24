@@ -10,13 +10,27 @@ export interface AuthUser {
   email: string;
   specialty: string;
   googleId: string | null;
+  role: 'doctor' | 'patient' | 'family' | 'admin' | 'lab' | 'laboratory' | 'pharmacist' | 'super_admin' | 'hospital_admin' | 'pending';
+  hospitalID: string;
+  linkedPatientIDs: string[];
+}
+
+export interface PendingGoogleUser {
+  googleId: string;
+  email: string;
+  name: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  pendingGoogleUser: PendingGoogleUser | null;
   login: (email: string, password: string, remember?: boolean) => Promise<void>;
+  demoLogin: (role: string) => Promise<void>;
+  register: (payload: any) => Promise<AuthUser>;
   googleLogin: () => void;
+  completeGoogleSignup: (data: { googleId: string; email: string; name: string; role: string }) => Promise<void>;
+  clearPendingGoogle: () => void;
   logout: () => Promise<void>;
 }
 
@@ -31,6 +45,7 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5001
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<PendingGoogleUser | null>(null);
 
   // On mount — check if we already have a valid session cookie
   const fetchMe = useCallback(async () => {
@@ -51,13 +66,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  // Check for Google OAuth redirect (?auth=success)
+  // Check for Google OAuth redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     if (params.get('auth') === 'success') {
-      // Clean the URL
+      // Existing user — session cookie is set, fetch user
       window.history.replaceState({}, '', window.location.pathname);
       fetchMe();
+    } else if (params.get('auth') === 'google-pending') {
+      // New Google user — needs role selection
+      setPendingGoogleUser({
+        googleId: params.get('googleId') || '',
+        email: params.get('email') || '',
+        name: params.get('name') || '',
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+      setLoading(false);
     }
   }, [fetchMe]);
 
@@ -86,6 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: 'demo@urbancare.com',
           specialty: 'General Medicine',
           googleId: null,
+          role: 'doctor',
+          hospitalID: 'H001',
+          linkedPatientIDs: [],
         });
         return;
       }
@@ -96,6 +124,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const googleLogin = () => {
     window.location.href = `${API_URL}/auth/google`;
   };
+
+  const demoLogin = async (role: string) => {
+    const res = await fetch(`${API_URL}/auth/demo-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ role }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Demo login failed');
+    setUser(data.user);
+  };
+
+  const completeGoogleSignup = async (payload: { googleId: string; email: string; name: string; role: string }) => {
+    const res = await fetch(`${API_URL}/auth/complete-google-signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Google signup failed');
+    setUser(data.user);
+    setPendingGoogleUser(null);
+  };
+
+  const clearPendingGoogle = () => setPendingGoogleUser(null);
 
   const logout = async () => {
     try {
@@ -109,8 +164,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const register = async (payload: any): Promise<AuthUser> => {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Registration failed');
+    }
+    // Set user from the response so auth state is immediately available
+    const newUser = data.user as AuthUser;
+    setUser(newUser);
+    return newUser;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, pendingGoogleUser, login, demoLogin, register, googleLogin, completeGoogleSignup, clearPendingGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

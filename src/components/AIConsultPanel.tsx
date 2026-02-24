@@ -7,6 +7,7 @@ import { Select, Tooltip } from 'antd';
 import { ChatMessage } from './chat/ChatMessage';
 import { QuickActionChips } from './chat/QuickActionChips';
 import { useAIConsult } from '../hooks/useAIConsult';
+import { useStore, AIConsultMode } from '../store/useStore';
 import '../styles/copilot.css';
 
 /**
@@ -47,6 +48,15 @@ export function AIConsultPanel() {
     patient,
     supportedLanguages,
   } = useAIConsult();
+
+  const { aiConsultMode, setAiConsultMode } = useStore();
+
+  const AI_MODE_OPTIONS = [
+    { value: 'clinical-copilot', label: '🩺 Clinical Copilot' },
+    { value: 'senior-consultant', label: '👨‍⚕️ Senior Consultant' },
+    { value: 'risk-escalation', label: '🚨 Risk Escalation' },
+    { value: 'discharge-review', label: '📋 Discharge Review' },
+  ];
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -299,6 +309,15 @@ export function AIConsultPanel() {
               </div>
             </div>
             <div className="copilot-header-actions">
+              <Select
+                className="copilot-lang-select"
+                value={aiConsultMode}
+                onChange={(v) => setAiConsultMode(v as AIConsultMode)}
+                size="small"
+                style={{ width: 140 }}
+                popupMatchSelectWidth={false}
+                options={AI_MODE_OPTIONS}
+              />
               <Select
                 className="copilot-lang-select"
                 value={language}

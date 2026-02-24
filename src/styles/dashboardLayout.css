@@ -1,0 +1,190 @@
+/* ═══════════════════════════════════════════════════════════
+   Dashboard Layout — EMR-Grade Dense UI
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Main Layout Grid ── */
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.dashboard-main-area {
+  display: flex;
+  flex: 1;
+  margin-left: 320px; /* sidebar width */
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboard-main-column {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 80px;
+  min-width: 0;
+}
+
+/* ── Right Panel ── */
+.right-panel-container {
+  width: 300px;
+  flex-shrink: 0;
+  border-left: 1px solid #e2e8f0;
+  background: #fafbfc;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100vh;
+}
+
+.right-panel-container::-webkit-scrollbar {
+  width: 3px;
+}
+
+.right-panel-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+/* ── Compact Alerts Row ── */
+.alerts-compact-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.alert-compact-item {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.alert-compact-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+}
+
+.alert-compact-item--critical {
+  background: rgba(254, 226, 226, 0.6);
+  border: 1px solid rgba(252, 165, 165, 0.3);
+}
+.alert-compact-item--critical::before { background: #ef4444; }
+
+.alert-compact-item--warning {
+  background: rgba(254, 243, 199, 0.6);
+  border: 1px solid rgba(252, 211, 77, 0.3);
+}
+.alert-compact-item--warning::before { background: #f59e0b; }
+
+.alert-compact-item--info {
+  background: rgba(219, 234, 254, 0.6);
+  border: 1px solid rgba(147, 197, 253, 0.3);
+}
+.alert-compact-item--info::before { background: #3b82f6; }
+
+/* ── Responsive ── */
+
+/* Laptop: hide right panel */
+@media (max-width: 1400px) {
+  .right-panel-container {
+    width: 260px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .right-panel-container {
+    display: none;
+  }
+  .dashboard-main-column {
+    padding: 16px 20px 80px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .dashboard-main-area {
+    margin-left: 0;
+  }
+  .dashboard-main-column {
+    padding: 12px 16px 80px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .dashboard-main-column {
+    padding: 8px 12px 80px;
+  }
+}
+
+/* ── Floating Upload Button (tablet/mobile) ── */
+.floating-upload-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.floating-upload-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(79, 70, 229, 0.45);
+}
+
+@media (max-width: 1200px) {
+  .floating-upload-btn {
+    display: flex;
+  }
+}
+
+/* ── Drawer Overrides ── */
+.upload-drawer .ant-drawer-body {
+  padding: 0 !important;
+  background: #f8fafc !important;
+}
+
+.upload-drawer .ant-drawer-header {
+  display: none !important;
+}
+
+/* ── Premium scrollbar for main column ── */
+.dashboard-main-column::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dashboard-main-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-main-column::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dashboard-main-column::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

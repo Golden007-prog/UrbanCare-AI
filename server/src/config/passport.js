@@ -1,6 +1,6 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { findOrCreateByGoogle } = require('../data/doctors');
+const { findOrCreateByGoogle, findById } = require('../models/User');
 
 // ──────────────────────────────────────────────────────────
 // Passport — Google OAuth 2.0 Strategy
@@ -17,8 +17,8 @@ function configurePassport() {
       },
       (_accessToken, _refreshToken, profile, done) => {
         try {
-          const doctor = findOrCreateByGoogle(profile);
-          return done(null, doctor);
+          const user = findOrCreateByGoogle(profile);
+          return done(null, user);
         } catch (err) {
           return done(err, null);
         }
@@ -26,15 +26,12 @@ function configurePassport() {
     )
   );
 
-  // Serialize / deserialize are not strictly needed when using JWT
-  // sessions instead of Passport sessions, but we keep them for
-  // compatibility if express-session is added later.
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser((id, done) => {
-    const { findById } = require('../data/doctors');
-    const doctor = findById(id);
-    done(null, doctor);
+    const user = findById(id);
+    done(null, user);
   });
 }
 
 module.exports = configurePassport;
+

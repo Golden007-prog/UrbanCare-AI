@@ -256,6 +256,8 @@ export function parsePatientsCSV(rows: Record<string, string>[]): Patient[] {
         condition: findCol(row, 'PrimaryCondition') || findCol(row, 'Condition') || 'General Checkup',
         riskLevel,
         lastUpdated: 'Just now',
+        patientType: 'private', // Default to private
+        admissionStatus: 'discharged', // Default admission status
         vitals: generateSyntheticVitals(id),
         notes: {
           soap: findCol(row, 'InitialNotes') || '',

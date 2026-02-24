@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { findById, sanitize } = require('../data/doctors');
+const { findById, sanitize } = require('../models/User');
 
 // ──────────────────────────────────────────────────────────
 // requireAuth — Protect routes behind JWT verification
@@ -17,13 +17,13 @@ function requireAuth(req, res, next) {
     // 2. Verify & decode
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 3. Attach user to the request
-    const doctor = findById(decoded.id);
-    if (!doctor) {
+    // 3. Attach user to the request (includes role, hospitalID)
+    const user = findById(decoded.id);
+    if (!user) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    req.user = sanitize(doctor);
+    req.user = sanitize(user);
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -33,4 +33,23 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = requireAuth;
+// ──────────────────────────────────────────────────────────
+// requireRole — Authorize users by role
+// ──────────────────────────────────────────────────────────
+
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    // Ensure requireAuth has run first
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized.' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: `Forbidden: Requires one of [${allowedRoles.join(', ')}]` });
+    }
+
+    next();
+  };
+}
+
+module.exports = { requireAuth, requireRole };

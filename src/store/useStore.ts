@@ -23,6 +23,9 @@ export interface Patient {
   riskLevel: 'Stable' | 'Warning' | 'Critical';
   lastUpdated: string;
   hospitalId?: string;
+  patientType: 'private' | 'admitted';
+  admissionStatus: 'not_admitted' | 'admitted' | 'discharged';
+  doctorID?: string;
   vitals: {
     heartRate: VitalSign;
     bloodPressure: { sys: number; dia: number; status: 'stable' | 'warning' | 'critical'; trend: number };
@@ -37,6 +40,27 @@ export interface Patient {
     plan: string;
   };
 }
+
+export interface PatientDocument {
+  id: string;
+  patientID: string;
+  hospitalID: string;
+  type: 'xray' | 'lab_report' | 'pharmacy_bill' | 'previous_doctor_report' | 'mri' | 'ct';
+  fileURL: string;
+  filePath?: string;
+  originalName?: string;
+  fileType?: string;
+  fileSize?: number;
+  uploadedByUserID: string;
+  uploaderRole: string;
+  title: string;
+  notes: string;
+  status?: 'uploading' | 'processing' | 'complete' | 'error';
+  extractedData?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export type AIConsultMode = 'clinical-copilot' | 'senior-consultant' | 'risk-escalation' | 'discharge-review';
 
 export interface Hospital {
   id: string;
@@ -94,6 +118,18 @@ interface AppState {
   addPatients: (patients: Patient[]) => void;
   updatePatientNotes: (id: string, notes: Partial<Patient['notes']>) => void;
   updatePatientVitals: (id: string, vitals: Patient['vitals']) => void;
+  admitPatient: (id: string) => void;
+  dischargePatient: (id: string) => void;
+
+  // Documents
+  documents: PatientDocument[];
+  addDocument: (doc: PatientDocument) => void;
+  setDocuments: (docs: PatientDocument[]) => void;
+  updateDocument: (id: string, updates: Partial<PatientDocument>) => void;
+
+  // AI Consult Mode
+  aiConsultMode: AIConsultMode;
+  setAiConsultMode: (mode: AIConsultMode) => void;
 
   // Alerts (CSV-imported)
   alerts: Alert[];
@@ -112,6 +148,10 @@ interface AppState {
   doctorProfile: DoctorProfile;
   updateDoctorProfile: (updates: Partial<DoctorProfile>) => void;
   syncProfileFromAuth: (user: { name: string; email: string; specialty: string }) => void;
+
+  // Global AI Settings
+  isOfflineMode: boolean;
+  toggleOfflineMode: () => void;
 
   // Settings
   settings: AppSettings;
@@ -174,6 +214,9 @@ const mockPatients: Patient[] = [
     riskLevel: 'Stable',
     lastUpdated: 'Just now',
     hospitalId: 'H001',
+    patientType: 'admitted',
+    admissionStatus: 'admitted',
+    doctorID: 'U001',
     vitals: {
       heartRate: {
         name: 'Heart Rate',
@@ -230,6 +273,9 @@ const mockPatients: Patient[] = [
     riskLevel: 'Stable',
     lastUpdated: '5 min ago',
     hospitalId: 'H001',
+    patientType: 'private',
+    admissionStatus: 'not_admitted',
+    doctorID: 'U001',
     vitals: {
       heartRate: {
         name: 'Heart Rate',
@@ -286,6 +332,9 @@ const mockPatients: Patient[] = [
     riskLevel: 'Critical',
     lastUpdated: '1 min ago',
     hospitalId: 'H002',
+    patientType: 'admitted',
+    admissionStatus: 'admitted',
+    doctorID: 'U002',
     vitals: {
       heartRate: {
         name: 'Heart Rate',
@@ -420,6 +469,38 @@ export const useStore = create<AppState>((set, get) => ({
         p.id === id ? { ...p, vitals, lastUpdated: 'Just now' } : p
       ),
     })),
+  admitPatient: (id) =>
+    set((state) => ({
+      patients: state.patients.map((p) =>
+        p.id === id
+          ? { ...p, patientType: 'admitted' as const, admissionStatus: 'admitted' as const, lastUpdated: 'Just now' }
+          : p
+      ),
+    })),
+  dischargePatient: (id) =>
+    set((state) => ({
+      patients: state.patients.map((p) =>
+        p.id === id
+          ? { ...p, admissionStatus: 'discharged' as const, lastUpdated: 'Just now' }
+          : p
+      ),
+    })),
+
+  // ── Documents ──
+  documents: [],
+  addDocument: (doc) =>
+    set((state) => ({ documents: [...state.documents, doc] })),
+  setDocuments: (docs) => set({ documents: docs }),
+  updateDocument: (id, updates) =>
+    set((state) => ({
+      documents: state.documents.map((d) =>
+        d.id === id ? { ...d, ...updates } : d
+      ),
+    })),
+
+  // ── AI Consult Mode ──
+  aiConsultMode: 'clinical-copilot' as AIConsultMode,
+  setAiConsultMode: (mode) => set({ aiConsultMode: mode }),
 
   // ── Alerts ──
   alerts: [],
@@ -458,6 +539,10 @@ export const useStore = create<AppState>((set, get) => ({
       },
     }));
   },
+
+  // ── Global AI Settings ──
+  isOfflineMode: false,
+  toggleOfflineMode: () => set((state) => ({ isOfflineMode: !state.isOfflineMode })),
 
   // ── Settings ──
   settings: defaultSettings,

@@ -1,15 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Checkbox, Divider, Alert, Typography } from 'antd';
-import { MailOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
+import {
+  MailOutlined,
+  LockOutlined,
+  GoogleOutlined,
+  DashboardOutlined,
+  BankOutlined,
+  MedicineBoxOutlined,
+  UserOutlined,
+  ExperimentOutlined,
+  MedicineBoxFilled,
+} from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardPath } from './UnauthorizedPage';
+import GoogleRoleModal from '../components/GoogleRoleModal';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
-  const { login, googleLogin } = useAuth();
+  const { login, demoLogin, googleLogin, pendingGoogleUser, completeGoogleSignup, clearPendingGoogle } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const onFinish = async (values: { email: string; password: string; remember: boolean }) => {
@@ -17,11 +30,49 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(values.email, values.password, values.remember);
-      navigate('/dashboard', { replace: true });
+      // Fetch current user to determine role-based redirect
+      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5001';
+      const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        navigate(getDashboardPath(data.user.role), { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (role: string, label: string) => {
+    setDemoLoading(label);
+    setError(null);
+    try {
+      await demoLogin(role);
+      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5001';
+      const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        navigate(getDashboardPath(data.user.role), { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (err: any) {
+      setError(`Demo login failed for ${label}. ${err.message || 'Is the server running?'}`);
+    } finally {
+      setDemoLoading(null);
+    }
+  };
+
+  const handleGoogleRoleSelect = async (role: string) => {
+    if (!pendingGoogleUser) return;
+    try {
+      await completeGoogleSignup({ ...pendingGoogleUser, role });
+      navigate(getDashboardPath(role), { replace: true });
+    } catch (err: any) {
+      setError(err.message || 'Google signup failed.');
     }
   };
 
@@ -77,7 +128,7 @@ export default function LoginPage() {
           >
             <Input
               prefix={<MailOutlined style={{ color: '#94a3b8' }} />}
-              placeholder="Doctor email"
+              placeholder="Email"
               autoComplete="email"
               style={styles.input}
             />
@@ -120,7 +171,7 @@ export default function LoginPage() {
         </Form>
 
         {/* ── Divider ── */}
-        <Divider style={{ margin: '4px 0 20px', color: '#94a3b8', fontSize: 13 }}>
+        <Divider style={{ margin: '4px 0 16px', color: '#94a3b8', fontSize: 13 }}>
           or continue with
         </Divider>
 
@@ -135,41 +186,130 @@ export default function LoginPage() {
           Sign in with Google
         </Button>
 
-        {/* ── Demo Login (Development) ── */}
-        <Button
-          block
-          size="large"
-          onClick={async () => {
-            setLoading(true);
-            // Bypass auth — set demo user directly
-            (window as any).__DEMO_AUTH__ = true;
-            // Use the demoLogin from AuthContext
-            try {
-              await (login as any)('demo@urbancare.com', 'demo', true);
-            } catch {
-              // If backend login fails, that's fine — we'll set user via context
-            }
-            setLoading(false);
-            navigate('/dashboard', { replace: true });
-          }}
-          style={{
-            ...styles.googleBtn,
-            marginTop: 10,
-            background: 'linear-gradient(135deg, #059669, #10b981)',
-            color: 'white',
-            border: 'none',
-          }}
-        >
-          🔬 Demo Login (Skip Auth)
-        </Button>
+        {/* ── Demo Login Buttons ── */}
+        <Divider style={{ margin: '16px 0 12px', color: '#94a3b8', fontSize: 12 }}>
+          🔬 Demo Access
+        </Divider>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button
+            size="middle"
+            loading={demoLoading === 'super_admin'}
+            onClick={() => handleDemoLogin('SUPER_ADMIN', 'super_admin')}
+            icon={<DashboardOutlined />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Super Admin
+          </Button>
+          <Button
+            size="middle"
+            loading={demoLoading === 'hospital_admin'}
+            onClick={() => handleDemoLogin('HOSPITAL_ADMIN', 'hospital_admin')}
+            icon={<BankOutlined />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Hospital Admin
+          </Button>
+          <Button
+            size="middle"
+            loading={demoLoading === 'doctor'}
+            onClick={() => handleDemoLogin('DOCTOR', 'doctor')}
+            icon={<MedicineBoxOutlined />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #059669, #10b981)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Doctor
+          </Button>
+          <Button
+            size="middle"
+            loading={demoLoading === 'patient'}
+            onClick={() => handleDemoLogin('PATIENT', 'patient')}
+            icon={<UserOutlined />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Patient
+          </Button>
+          <Button
+            size="middle"
+            loading={demoLoading === 'lab'}
+            onClick={() => handleDemoLogin('LAB', 'lab')}
+            icon={<ExperimentOutlined />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Laboratory
+          </Button>
+          <Button
+            size="middle"
+            loading={demoLoading === 'pharmacist'}
+            onClick={() => handleDemoLogin('PHARMACIST', 'pharmacist')}
+            icon={<MedicineBoxFilled />}
+            style={{
+              ...styles.demoBtn,
+              flex: '1 1 calc(33.33% - 6px)',
+              background: 'linear-gradient(135deg, #ef4444, #f87171)',
+              color: 'white',
+              border: 'none',
+            }}
+          >
+            Pharmacist
+          </Button>
+        </div>
 
         {/* ── Footer ── */}
         <div style={styles.footer}>
           <Text style={{ color: '#94a3b8', fontSize: 12 }}>
             Protected by HIPAA-compliant authentication
           </Text>
+          <div style={{ marginTop: 8 }}>
+            <Text style={{ color: '#64748b', fontSize: 13 }}>
+              Don't have an account?{' '}
+              <a
+                onClick={() => navigate('/signup')}
+                style={{ color: '#4f46e5', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Create Account
+              </a>
+            </Text>
+          </div>
         </div>
       </div>
+
+      {/* ── Google Role Selection Modal ── */}
+      <GoogleRoleModal
+        visible={!!pendingGoogleUser}
+        googleData={pendingGoogleUser}
+        onComplete={handleGoogleRoleSelect}
+        onCancel={clearPendingGoogle}
+      />
     </div>
   );
 }
@@ -210,8 +350,8 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
   },
   card: {
-    width: 420,
-    maxWidth: '92vw',
+    width: 480,
+    maxWidth: '94vw',
     background: '#ffffff',
     borderRadius: 20,
     padding: '40px 36px 28px',
@@ -275,8 +415,15 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     gap: 8,
   },
+  demoBtn: {
+    height: 40,
+    borderRadius: 10,
+    fontWeight: 500,
+    fontSize: 12,
+    boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
+  },
   footer: {
     textAlign: 'center' as const,
-    marginTop: 24,
+    marginTop: 20,
   },
 };

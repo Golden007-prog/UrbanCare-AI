@@ -74,3 +74,31 @@ export async function aiGet<T = any>(
 
   return response.json();
 }
+
+/**
+ * DELETE to an API endpoint with automatic offline mode header.
+ */
+export async function aiDelete<T = any>(
+  path: string,
+  offline: boolean = false,
+): Promise<{ success: boolean; data: T; error?: string }> {
+  const headers: Record<string, string> = {};
+
+  if (offline) {
+    headers['x-offline-mode'] = 'true';
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'DELETE',
+    headers,
+    credentials: 'include',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || `Request to ${path} failed`);
+  }
+
+  return data;
+}

@@ -57,7 +57,7 @@ export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 // ──────────────────────────────────────────────────────────
 
 export function useAIConsult() {
-  const { selectedPatientId, patients, alerts } = useStore();
+  const { selectedPatientId, patients, alerts, aiConsultMode } = useStore();
   const patient = patients.find((p) => p.id === selectedPatientId);
   const patientAlerts = alerts.filter((a) => a.patientId === patient?.id);
 
@@ -158,6 +158,7 @@ export function useAIConsult() {
           patientContext: buildPatientContext(),
           language,
           action: action || undefined,
+          mode: aiConsultMode,
         }, false);
 
         const assistantMsg: ChatMessage = {
@@ -184,7 +185,7 @@ export function useAIConsult() {
         setIsLoading(false);
       }
     },
-    [messages, language, buildPatientContext]
+    [messages, language, buildPatientContext, aiConsultMode]
   );
 
   // Execute a quick action

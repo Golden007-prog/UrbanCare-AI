@@ -16,7 +16,7 @@
 const { GoogleGenAI } = require('@google/genai');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_ID = 'gemini-2.0-flash';
+const MODEL_ID = 'gemini-2.5-flash';
 
 // ── Language Map ────────────────────────────────────────────
 
@@ -66,13 +66,60 @@ const STRUCTURED_ACTIONS = new Set([
   'discharge-summary',
   'follow-up-plan',
 ]);
+// ── AI Consultation Mode Preambles ─────────────────────────
+
+const MODE_PREAMBLES = {
+  'clinical-copilot': `You are operating in CLINICAL COPILOT mode.
+Act as a knowledgeable clinical assistant working alongside the doctor during rounds.
+Focus on:
+- Real-time clinical decision support
+- Vital sign interpretation with context
+- Quick differential diagnosis assistance
+- Medication interaction checks
+- Evidence-based treatment suggestions
+Be concise, action-oriented, and focused on immediate clinical needs.`,
+
+  'senior-consultant': `You are operating in SENIOR CONSULTANT mode.
+Act as an experienced senior physician (20+ years of practice) providing a second opinion.
+Focus on:
+- Comprehensive case analysis
+- Complex differential diagnoses
+- Treatment plan review and optimization
+- Literature-backed recommendations
+- Mentoring perspective on clinical decisions
+Be thorough, authoritative, and provide detailed clinical reasoning.`,
+
+  'risk-escalation': `You are operating in RISK ESCALATION ADVISOR mode.
+Act as a clinical risk assessment specialist focused on patient safety.
+Focus on:
+- Identifying deterioration patterns in vital signs
+- Flagging high-risk clinical scenarios
+- Recommending escalation protocols (rapid response, ICU transfer)
+- Adverse event prevention
+- Sepsis, stroke, and cardiac event screening
+Be vigilant, systematic, and always err on the side of caution.`,
+
+  'discharge-review': `You are operating in DISCHARGE REVIEW mode.
+Act as a discharge planning specialist ensuring safe patient transitions.
+Focus on:
+- Discharge readiness assessment
+- Medication reconciliation at discharge
+- Follow-up care planning
+- Patient education materials
+- Readmission risk evaluation
+- Home care instructions and red flags
+Be structured, patient-centered, and focused on continuity of care.`,
+};
 
 // ── Clinical System Prompt ─────────────────────────────────
 
-function buildSystemPrompt(patientContext, language = 'en') {
+function buildSystemPrompt(patientContext, language = 'en', mode = null) {
   const langName = LANGUAGE_MAP[language] || 'English';
 
-  let systemPrompt = `You are an AI clinical assistant ("UrbanCare AI Copilot") helping a licensed medical professional in a hospital setting.
+  // Prepend mode preamble if specified
+  const modePreamble = mode && MODE_PREAMBLES[mode] ? MODE_PREAMBLES[mode] + '\n\n' : '';
+
+  let systemPrompt = `${modePreamble}You are an AI clinical assistant ("UrbanCare AI Copilot") helping a licensed medical professional in a hospital setting.
 
 CORE RULES:
 1. You assist doctors — never provide definitive diagnoses or prescriptions.
@@ -149,7 +196,7 @@ function trimHistory(history, maxMessages = 20) {
  * @param {string}   [params.action]       — Quick action key (e.g. 'generate-soap')
  * @returns {Promise<Object>}
  */
-async function consultChat({ message, history = [], patientContext, language = 'en', action }) {
+async function consultChat({ message, history = [], patientContext, language = 'en', action, mode }) {
   if (!GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY is not configured in server environment');
   }
@@ -166,8 +213,8 @@ async function consultChat({ message, history = [], patientContext, language = '
     isStructuredRequest = STRUCTURED_ACTIONS.has(action);
   }
 
-  // Build system prompt with patient context
-  const systemInstruction = buildSystemPrompt(patientContext, language);
+  // Build system prompt with patient context and mode
+  const systemInstruction = buildSystemPrompt(patientContext, language, mode);
 
   // Trim history to prevent token overflow
   const trimmedHistory = trimHistory(history, 20);
@@ -222,4 +269,4 @@ async function consultChat({ message, history = [], patientContext, language = '
   }
 }
 
-module.exports = { consultChat, ACTION_PROMPTS, LANGUAGE_MAP };
+module.exports = { consultChat, ACTION_PROMPTS, LANGUAGE_MAP, MODE_PREAMBLES };

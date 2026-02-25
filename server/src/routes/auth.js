@@ -13,10 +13,11 @@ const router = express.Router();
 // ── Helpers ────────────────────────────────────────────────
 
 const COOKIE_NAME = 'token';
+const IS_PROD = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,                           // JS cannot read the cookie
-  secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
-  sameSite: 'lax',                          // CSRF protection
+  secure: IS_PROD,                          // HTTPS only in prod (required for SameSite=None)
+  sameSite: IS_PROD ? 'none' : 'lax',      // 'none' allows cross-origin cookies (github.io → fly.dev)
   maxAge: 24 * 60 * 60 * 1000,             // 24 hours
   path: '/',
 };

@@ -35,6 +35,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_API_URL: https://urbancare-api.fly.dev
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

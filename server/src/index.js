@@ -55,7 +55,7 @@ const allowedOrigins = [
   'http://localhost:3000',        // Local production preview
   'http://localhost:3001',        // Alternate local port
   process.env.CLIENT_URL,         // Env-configurable
-  'https://github.com/Golden007-prog/UrbanCare-AI',  // Production
+  'https://golden007-prog.github.io',  // GitHub Pages
 ].filter(Boolean);
 
 app.use(

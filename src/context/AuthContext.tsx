@@ -161,6 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Even if the request fails, clear local state
     }
+    // Clear credential gate session flag
+    sessionStorage.removeItem('urbancare_credentials_set');
     setUser(null);
   };
 

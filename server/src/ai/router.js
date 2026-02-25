@@ -24,10 +24,21 @@ const { offlineMiddleware, OFFLINE_MODEL_MAP } = require('./offlineMiddleware');
 const { getSettings } = require('../models/HospitalSettings');
 const { requireAuth } = require('../middleware/auth');
 const { addLog } = require('../models/SystemLog');
+const credentialStore = require('../services/credentialStore');
 
 const router = express.Router();
 
 router.use(requireAuth);
+
+// ── Inject per-user API credentials into request ──────────
+// If the user has stored credentials via the Credential Gate,
+// attach them to req.userCredentials for downstream AI calls.
+router.use((req, _res, next) => {
+  if (req.user?.id) {
+    req.userCredentials = credentialStore.get(req.user.id);
+  }
+  next();
+});
 
 // ── Rate limiter for AI consult ────────────────────────────
 
@@ -499,6 +510,7 @@ router.post('/ai-consult', consultLimiter, async (req, res) => {
       language: language || 'en',
       action,
       mode: mode || null,
+      apiKey: req.userCredentials?.geminiKey || null,
     });
 
     clearTimeout(timeout);

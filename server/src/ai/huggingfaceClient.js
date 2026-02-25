@@ -28,8 +28,9 @@ const TXGEMMA_ENDPOINT = process.env.TXGEMMA_ENDPOINT || '';
 
 let _tokenValid = null; // null = unchecked, true/false = verified
 
-function isConfigured() {
-  return HF_TOKEN.length > 0 && HF_TOKEN.startsWith('hf_');
+function isConfigured(tokenOverride) {
+  const token = tokenOverride || HF_TOKEN;
+  return token.length > 0 && token.startsWith('hf_');
 }
 
 function getStatus() {
@@ -44,7 +45,8 @@ function getStatus() {
 // ── Core fetch wrapper ────────────────────────────────────
 
 async function hfFetch(url, body, options = {}) {
-  if (!isConfigured()) {
+  const activeToken = options.hfToken || HF_TOKEN;
+  if (!isConfigured(activeToken)) {
     throw new Error('HF_TOKEN not configured — falling back to mock mode');
   }
 
@@ -55,7 +57,7 @@ async function hfFetch(url, body, options = {}) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Authorization': `Bearer ${activeToken}`,
         'Content-Type': 'application/json',
         ...(options.headers || {}),
       },
@@ -261,7 +263,7 @@ async function speechRecognition(modelId, audio, opts = {}) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Authorization': `Bearer ${options.hfToken || HF_TOKEN}`,
         'Content-Type': 'application/octet-stream',
       },
       body: audio,

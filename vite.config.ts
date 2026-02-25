@@ -8,9 +8,8 @@ export default defineConfig(({mode}) => {
   return {
     base: '/UrbanCare-AI/',
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
+    // SECURITY: Do NOT inject API keys into the frontend build.
+    // All secrets are handled server-side via the Credential Gate.
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

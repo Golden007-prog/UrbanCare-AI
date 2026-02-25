@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { findByEmail, findByGoogleId, sanitize, createUser, users } = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { query } = require('../config/db');
+const credentialStore = require('../services/credentialStore');
 
 const router = express.Router();
 
@@ -312,7 +313,19 @@ router.get('/me', requireAuth, (req, res) => {
 // POST /auth/logout — Clear the JWT cookie
 // ──────────────────────────────────────────────────────────
 
-router.post('/logout', (_req, res) => {
+router.post('/logout', (req, res) => {
+  // Clear stored API credentials before destroying the session
+  try {
+    const token = req.cookies?.token;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      credentialStore.clear(decoded.id);
+      console.log(`🗑️  Credentials cleared on logout for user ${decoded.id}`);
+    }
+  } catch {
+    // Token may be expired/invalid — that's fine, cookie is being cleared anyway
+  }
+
   res
     .clearCookie(COOKIE_NAME, { path: '/' })
     .json({ message: 'Logged out successfully' });

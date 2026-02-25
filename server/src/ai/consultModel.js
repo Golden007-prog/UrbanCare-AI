@@ -196,9 +196,10 @@ function trimHistory(history, maxMessages = 20) {
  * @param {string}   [params.action]       — Quick action key (e.g. 'generate-soap')
  * @returns {Promise<Object>}
  */
-async function consultChat({ message, history = [], patientContext, language = 'en', action, mode }) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not configured in server environment');
+async function consultChat({ message, history = [], patientContext, language = 'en', action, mode, apiKey }) {
+  const activeKey = apiKey || GEMINI_API_KEY;
+  if (!activeKey) {
+    throw new Error('GEMINI_API_KEY is not configured. Please provide credentials via the Credential Gate or set the server environment variable.');
   }
 
   // If an action was triggered, use the action prompt template
@@ -226,7 +227,7 @@ async function consultChat({ message, history = [], patientContext, language = '
   }));
 
   try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: activeKey });
 
     const chat = ai.chats.create({
       model: MODEL_ID,

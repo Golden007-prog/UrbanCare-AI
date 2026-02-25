@@ -16,6 +16,8 @@ import HospitalAdminDashboard from './pages/admin/HospitalAdminDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequireRole } from './components/RequireRole';
 import { useAuth } from './context/AuthContext';
+import { useCredentials } from './context/CredentialContext';
+import CredentialGate from './components/CredentialGate';
 import { useStore } from './store/useStore';
 import { getDashboardPath } from './pages/UnauthorizedPage';
 
@@ -46,6 +48,14 @@ function RoleBasedRedirect() {
 }
 
 function App() {
+  const { user, loading: authLoading } = useAuth();
+  const { credentialsReady, loading: credLoading } = useCredentials();
+
+  // If user is authenticated but hasn't provided credentials → show gate
+  if (!authLoading && user && !credLoading && !credentialsReady) {
+    return <CredentialGate />;
+  }
+
   return (
     <Routes>
       {/* ──── Public routes ──── */}

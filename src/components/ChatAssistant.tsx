@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { GoogleGenAI } from "@google/genai";
+import { aiPost } from '../lib/aiClient';
 import ReactMarkdown from 'react-markdown';
 import clsx from 'clsx';
 
@@ -36,31 +36,28 @@ export const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const context = `
-        You are a helpful medical assistant.
-        Current Patient Context:
-        Name: ${patient.name}
-        Age: ${patient.age}
-        Condition: ${patient.condition}
-        Vitals: HR ${patient.vitals.heartRate.value}, BP ${patient.vitals.bloodPressure.sys}/${patient.vitals.bloodPressure.dia}, SpO2 ${patient.vitals.spO2.value}
-        
-        Answer the user's question based on this context. Be concise and professional.
-      `;
-      
-      const chat = ai.chats.create({
-        model: "gemini-2.5-flash-latest",
-        config: { systemInstruction: context },
-        history: messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })),
+      // Route through secure backend — API key is injected server-side
+      const result = await aiPost('/api/ai-consult', {
+        message: input,
+        history: messages.map(m => ({ role: m.role, content: m.content })),
+        patientContext: {
+          patientId: patient.id,
+          name: patient.name,
+          age: patient.age,
+          condition: patient.condition,
+          vitals: {
+            heartRate: patient.vitals.heartRate.value,
+            bloodPressure: `${patient.vitals.bloodPressure.sys}/${patient.vitals.bloodPressure.dia}`,
+            spO2: patient.vitals.spO2.value,
+          },
+        },
       });
 
-      const result = await chat.sendMessage({ message: input });
-      const response = result.text;
-
+      const response = result.data?.content || 'No response from AI.';
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm sorry, I encountered an error. Please try again." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `I'm sorry, I encountered an error: ${error.message || 'Please try again.'}` }]);
     } finally {
       setIsLoading(false);
     }

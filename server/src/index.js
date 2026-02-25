@@ -32,6 +32,7 @@ const patientIntakeRouter = require('./routes/patientIntake');
 const patientUploadRouter = require('./routes/patientUpload');
 const dashboardOverviewRouter = require('./routes/dashboardOverview');
 const { deleteExpiredChats } = require('./agents/VoiceClinicalCopilotAgent');
+const credentialRoutes = require('./routes/credentialRoutes');
 
 // ── Initialize Agents ──────────────────────────────────────
 registerAllAgents();
@@ -97,6 +98,7 @@ app.use('/api/xray', xrayRoutes);
 app.use('/api/patient', patientIntakeRouter);
 app.use('/api/patient/upload', patientUploadRouter);
 app.use('/api/dashboard', dashboardOverviewRouter);
+app.use('/api', credentialRoutes);
 
 // Health check
 app.get('/', (_req, res) => {

@@ -123,8 +123,8 @@ setInterval(() => {
 
 // ── Start Server ───────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`\n🏥  UrbanCare Server listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🏥  UrbanCare Server listening on http://0.0.0.0:${PORT}`);
   console.log(`   POST /auth/login              — Email + password login`);
   console.log(`   GET  /auth/google             — Google OAuth`);
   console.log(`   GET  /auth/google/callback    — Google callback`);

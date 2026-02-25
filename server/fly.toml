@@ -16,4 +16,5 @@ primary_region = 'sin'
     type = "http"
     interval = "30s"
     timeout = "5s"
+    grace_period = "15s"
     path = "/"

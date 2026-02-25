@@ -65,13 +65,15 @@ export default function CredentialGate() {
     return values[step.inputKey].trim().length > 6;
   };
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (activeStep < STEPS.length - 1) {
       setActiveStep(activeStep + 1);
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!values.hfToken.trim() || !values.geminiKey.trim()) {
       setError('Both credentials are required.');
       return;

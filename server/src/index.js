@@ -43,6 +43,9 @@ seedDemoData();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Tell Express it is behind a proxy (like Fly.io) so it constructs HTTPS URLs correctly
+app.set('trust proxy', 1);
+
 // ── Global Middleware ──────────────────────────────────────
 
 app.use(express.json({ limit: '50mb' }));
